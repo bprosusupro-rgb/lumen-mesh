@@ -4,9 +4,11 @@ This prototype uses the Godot OpenXR Vendors Meta Scene Sample and its Meta scen
 
 ## Use
 
-Enable developer mode and sideload the debug APK onto a Quest 3S with SideQuest or `adb install -r LumenMesh.apk`. Launch it from the headset's unknown sources/developer apps. Grant scene access if prompted. Use in a well-lit room and follow the headset's room setup. On the left controller, Menu requests a room capture/update, X toggles the mesh and markers, and Y toggles passthrough. On the right controller, trigger adds/removes markers, A adds a floating marker, and B toggles depth occlusion.
+Enable developer mode and sideload the debug APK onto a Quest 3S with SideQuest or `adb install -r LumenMesh.apk`. Launch it from the headset's unknown sources/developer apps and grant scene access when prompted. Follow the room setup in a well-lit space.
 
-IR tracking cameras are not available to this ordinary app as a night-vision video feed. Passthrough and tracking require adequate light; do not rely on this app to navigate in darkness or detect hazards.
+The in-headset panel shows the current view, mesh, and light mode. Right **A** cycles Natural, Low Light, and Low Light+ passthrough filters; right **B** hides or shows the panel. Left **X** toggles the room mesh, left **Y** toggles passthrough, and left **Menu** requests a room scan/update. Right **Trigger** adds or removes markers.
+
+The low-light modes adjust passthrough brightness and contrast. They need visible light and may amplify noise, flatten detail, or fail on unsupported runtimes. They are not infrared or night vision and cannot reveal objects in total darkness. Do not rely on the app for navigation or hazard detection. The Quest 3S's infrared tracking images are not available to this ordinary app.
 
 ## Status and build
 

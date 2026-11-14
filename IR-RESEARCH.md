@@ -23,3 +23,7 @@ This is materially stronger evidence than just an idea: its code reads image dat
 ## Next experiment if a compatible rooted 3S is available
 
 First establish the exact model, Horizon OS build and root status; verify QuestLHSync's documented support for that build. With the owner's consent and a controlled, well-lit stationary test, characterize one local tracking-camera frame, validate camera identity, format and exposure, and measure whether the existing reader can copy it without disrupting tracking. Only after that would a local-only preview and headset alignment be worth implementing. Test darkness separately with the headset stationary; an IR scene view would not prove safe navigation. No steps in this paragraph have been performed.
+
+## User's Horizon OS 2.9 build
+
+The supplied Quest 3S build `4069240023000610` was not found in the reviewed public root compatibility lists. This is not proof that rooting is impossible; compatibility remains unverified. No root or IR-camera access was attempted. The v0.2.0 app instead uses Meta's supported passthrough brightness/contrast filter. See [Meta's passthrough customization](https://developers.meta.com/vr/documentation/native/android/mobile-passthrough-customization/) and [Godot OpenXR Vendors passthrough](https://godotvr.github.io/godot_openxr_vendors/manual/meta/passthrough.html). This changes the appearance of the RGB passthrough and does not access IR cameras.

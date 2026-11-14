@@ -24,6 +24,13 @@ var global_environment_depth_enabled: bool = true
 const SPATIAL_ANCHORS_FILE = "user://openxr_fb_spatial_anchors.json"
 
 var _setup := false
+var light_mode := 0
+var passthrough_filter = null
+const LIGHT_MODES = ["NATURAL", "LOW LIGHT", "LOW LIGHT +"]
+
+@onready var status_label: Label3D = $XROrigin3D/XRCamera3D/LumenPanel/Status
+@onready var hint_label: Label3D = $XROrigin3D/XRCamera3D/LumenPanel/Hint
+@onready var panel: Node3D = $XROrigin3D/XRCamera3D/LumenPanel
 
 const COLORS = [
 	"#FF0000",  # Red
@@ -51,6 +58,9 @@ func _on_openxr_session_begun() -> void:
 
 	load_spatial_anchors_from_file()
 	enable_passthrough(true)
+	passthrough_filter = Engine.get_singleton("OpenXRFbPassthroughExtension")
+	_apply_light_mode()
+	_update_panel()
 
 	var environment_depth = Engine.get_singleton("OpenXRMetaEnvironmentDepthExtension")
 	if environment_depth:
@@ -129,6 +139,30 @@ func enable_passthrough(enable: bool) -> void:
 			get_viewport().transparent_bg = false
 			world_environment.environment.background_color = Color(0.3, 0.3, 0.3, 1.0)
 		passthrough_enabled = enable
+	_update_panel()
+
+
+func _apply_light_mode() -> void:
+	if not passthrough_filter:
+		_update_panel()
+		return
+	if light_mode == 0:
+		passthrough_filter.set_passthrough_filter(OpenXRFbPassthroughExtension.PASSTHROUGH_FILTER_DISABLED)
+	else:
+		var brightness := 0.18 if light_mode == 1 else 0.34
+		var contrast := 1.10 if light_mode == 1 else 1.16
+		passthrough_filter.set_brightness_contrast_saturation(brightness, contrast, 0.9)
+		passthrough_filter.set_passthrough_filter(OpenXRFbPassthroughExtension.PASSTHROUGH_FILTER_BRIGHTNESS_CONTRAST_SATURATION)
+	_update_panel()
+
+
+func _update_panel() -> void:
+	if not is_instance_valid(status_label):
+		return
+	var view := "ON" if passthrough_enabled else "OFF"
+	var mesh := "ON" if scene_and_spatial_anchors_displayed else "OFF"
+	var mode: String = LIGHT_MODES[light_mode] if passthrough_filter else "UNAVAILABLE"
+	status_label.text = "VIEW  %s     MESH  %s\nLIGHT  %s" % [view, mesh, mode]
 
 
 func display_scene_and_spatial_anchors(value: bool) -> void:
@@ -141,6 +175,7 @@ func display_scene_and_spatial_anchors(value: bool) -> void:
 	right_hand_pointer_raycast.enabled = value
 
 	scene_and_spatial_anchors_displayed = value
+	_update_panel()
 
 
 func _physics_process(_delta: float) -> void:
@@ -181,6 +216,7 @@ func _on_left_hand_button_pressed(name):
 	elif name == "by_button":
 		enable_passthrough(not passthrough_enabled)
 	elif name == "menu_button":
+		hint_label.text = "FOLLOW THE HEADSET'S ROOM SETUP"
 		scene_manager.request_scene_capture()
 
 
@@ -205,16 +241,14 @@ func _on_right_hand_button_pressed(name: String) -> void:
 
 				spatial_anchor_manager.create_anchor(anchor_transform, {color = COLORS[randi() % COLORS.size()]})
 	elif name == "ax_button":
-		var anchor_transform := right_hand.transform
-		spatial_anchor_manager.create_anchor(anchor_transform, {color = COLORS[randi() % COLORS.size()]})
+		light_mode = (light_mode + 1) % LIGHT_MODES.size()
+		_apply_light_mode()
 	elif name == "by_button":
-		global_environment_depth_enabled = not global_environment_depth_enabled
-
-		environment_depth_node.visible = global_environment_depth_enabled
-		depth_testing_mesh.set_surface_override_material(0, BLUE_MATERIAL if global_environment_depth_enabled else ENVIRONMENT_DEPTH_MATERIAL)
+		panel.visible = not panel.visible
 
 
 func _on_scene_manager_scene_capture_completed(success: bool) -> void:
+	hint_label.text = "SCAN COMPLETE" if success else "SCAN CANCELLED OR UNAVAILABLE"
 	if success:
 		# Recreate scene anchors since the user may have changed them.
 		if scene_manager.are_scene_anchors_created():
