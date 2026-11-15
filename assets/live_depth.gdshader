@@ -10,11 +10,11 @@ vec3 world_at(vec2 uv, float d) {
     return p.xyz / max(abs(p.w), 0.00001) * sign(p.w);
 }
 void vertex() {
-    vec2 uv = UV;
+    vec2 uv = clamp(UV, vec2(0.0001), vec2(0.9999));
     float d = textureLod(META_ENVIRONMENT_DEPTH_TEXTURE, vec3(uv, 0.0), 0.0).r;
-    vec2 step_uv = vec2(1.0 / 96.0, 1.0 / 72.0);
-    vec2 ux = min(uv + vec2(step_uv.x, 0.0), vec2(1.0));
-    vec2 uy = min(uv + vec2(0.0, step_uv.y), vec2(1.0));
+    vec2 step_uv = vec2(1.0 / 128.0, 1.0 / 96.0);
+    vec2 ux = min(uv + vec2(step_uv.x, 0.0), vec2(0.9999));
+    vec2 uy = min(uv + vec2(0.0, step_uv.y), vec2(0.9999));
     float dx = textureLod(META_ENVIRONMENT_DEPTH_TEXTURE, vec3(ux, 0.0), 0.0).r;
     float dy = textureLod(META_ENVIRONMENT_DEPTH_TEXTURE, vec3(uy, 0.0), 0.0).r;
     vec3 world = world_at(uv, d);

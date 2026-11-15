@@ -134,22 +134,43 @@ func _apply_mesh_style() -> void:
 
 
 func _build_live_depth() -> void:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var columns := 96
-	var rows := 72
+	# Shared vertices reduce depth-texture lookups versus six vertices per cell.
+	var columns := 128
+	var rows := 96
+	var vertices := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	vertices.resize((columns + 1) * (rows + 1))
+	uvs.resize(vertices.size())
+	indices.resize(columns * rows * 6)
+	for y in range(rows + 1):
+		for x in range(columns + 1):
+			var i := y * (columns + 1) + x
+			var uv := Vector2(float(x) / columns, float(y) / rows)
+			vertices[i] = Vector3(uv.x, uv.y, 0)
+			uvs[i] = uv
+	var k := 0
 	for y in range(rows):
 		for x in range(columns):
-			var a := Vector2(float(x) / columns, float(y) / rows)
-			var b := Vector2(float(x + 1) / columns, float(y + 1) / rows)
-			for uv in [a, Vector2(b.x, a.y), b, a, b, Vector2(a.x, b.y)]:
-				st.set_uv(uv)
-				st.add_vertex(Vector3(uv.x, uv.y, 0))
+			var a := y * (columns + 1) + x
+			var b := a + 1
+			var c := a + columns + 1
+			var d := c + 1
+			for index in [a, b, d, a, d, c]:
+				indices[k] = index
+				k += 1
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	var material := ShaderMaterial.new()
 	material.shader = load("res://assets/live_depth.gdshader")
 	material.set_shader_parameter("live_color", MESH_COLORS[mesh_color])
 	live_depth_node = MeshInstance3D.new()
-	live_depth_node.mesh = st.commit()
+	live_depth_node.mesh = mesh
 	live_depth_node.material_override = material
 	live_depth_node.extra_cull_margin = 10000.0
 	live_depth_node.visible = false
@@ -168,7 +189,7 @@ func _toggle_live_depth() -> void:
 		depth_extension.start_environment_depth()
 		live_depth_enabled = depth_extension.is_environment_depth_started()
 		live_depth_node.visible = live_depth_enabled
-		hint_label.text = "LIVE DEPTH ON  /  CHECK SPATIAL DATA PERMISSION" if live_depth_enabled else "LIVE DEPTH COULD NOT START"
+		hint_label.text = "DEPTH REQUESTED / CHECK SPATIAL DATA PERMISSION" if live_depth_enabled else "LIVE DEPTH COULD NOT START"
 	_update_panel()
 
 
