@@ -39,7 +39,11 @@ shader = ExtResource("9_panel_shader")
 
 [sub_resource type="QuadMesh" id="LumenPanelMesh"]
 material = SubResource("LumenPanelMaterial")
-size = Vector2(1.22, 0.90)
+size = Vector2(1.40, 0.92)
+
+[sub_resource type="QuadMesh" id="HudMesh"]
+material = SubResource("LumenPanelMaterial")
+size = Vector2(1.22, 0.10)
 
 [node name="Main" type="Node3D" unique_id=1577214552]
 script = ExtResource("1_fsva1")
@@ -55,28 +59,28 @@ transform = Transform3D(0.677077, -0.692092, 0.25015, 0.264251, 0.545897, 0.7950
 [node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D" unique_id=1244728037]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.352791, 0)
 
-[node name="LumenPanel" type="Node3D" parent="XROrigin3D/XRCamera3D"]
-position = Vector3(0, -0.19, -1.48)
+[node name="LumenPanel" type="Node3D" parent="XROrigin3D"]
+visible = false
 
-[node name="Background" type="MeshInstance3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
+[node name="Background" type="MeshInstance3D" parent="XROrigin3D/LumenPanel"]
 mesh = SubResource("LumenPanelMesh")
 
-[node name="Title" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
+[node name="Title" type="Label3D" parent="XROrigin3D/LumenPanel"]
 no_depth_test = true
 render_priority = 110
 outline_render_priority = 109
-position = Vector3(-0.54, 0.36, 0.012)
+position = Vector3(-0.64, 0.36, 0.012)
 pixel_size = 0.0011
 font_size = 42
 horizontal_alignment = 0
 modulate = Color(0.93, 0.97, 1, 1)
-text = "Lumen Mesh"
+text = "Settings"
 
-[node name="Hint" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
+[node name="Hint" type="Label3D" parent="XROrigin3D/LumenPanel"]
 no_depth_test = true
 render_priority = 110
 outline_render_priority = 109
-position = Vector3(-0.50, -0.425, 0.012)
+position = Vector3(-0.61, -0.375, 0.012)
 pixel_size = 0.00072
 font_size = 30
 horizontal_alignment = 0
@@ -86,14 +90,18 @@ text = "POINT + TRIGGER TO SELECT    /    B CLOSES"
 [node name="Hud" type="Node3D" parent="XROrigin3D/XRCamera3D"]
 position = Vector3(0, 0.34, -1.5)
 
+[node name="Backing" type="MeshInstance3D" parent="XROrigin3D/XRCamera3D/Hud"]
+mesh = SubResource("HudMesh")
+
 [node name="Readout" type="Label3D" parent="XROrigin3D/XRCamera3D/Hud"]
+position = Vector3(0, 0, 0.015)
 no_depth_test = true
 render_priority = 110
 outline_render_priority = 109
 pixel_size = 0.0008
 font_size = 32
 modulate = Color(0.95, 0.98, 1, 1)
-text = "POINT NORTH AND CALIBRATE      -- FPS"
+text = "DIRECTION: SET NORTH    |    -- FPS    |    B: SETTINGS"
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin3D" unique_id=1145746189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.460909, 0.388594, -0.241118)

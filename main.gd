@@ -14,7 +14,7 @@ var scene_and_spatial_anchors_displayed: bool = true
 var _setup := false
 var light_mode := 0
 var passthrough_filter = null
-const LIGHT_MODES = ["NATURAL", "SOFT LIFT", "BRIGHT", "MONO"]
+const LIGHT_MODES = ["DAY", "SOFT LIFT", "BRIGHT", "MONO"]
 const MESH_STYLES = ["FINE", "BOLD", "SURFACE"]
 const COLOR_NAMES = ["CYAN", "MINT", "VIOLET", "AMBER", "WHITE", "BLUE", "ROSE", "LIME", "ORANGE", "RED"]
 const MESH_COLORS = [Color(0.08, 0.9, 1.0), Color(0.15, 1.0, 0.62), Color(0.68, 0.42, 1.0), Color(1.0, 0.65, 0.2), Color(0.9, 0.96, 1.0), Color(0.25, 0.55, 1.0), Color(1.0, 0.38, 0.62), Color(0.7, 1.0, 0.2), Color(1.0, 0.42, 0.12), Color(1.0, 0.18, 0.2)]
@@ -23,13 +23,13 @@ const SETTINGS_FILE = "user://lumen-settings.cfg"
 var mesh_style := 0
 var mesh_color := 0
 
-@onready var hint_label: Label3D = $XROrigin3D/XRCamera3D/LumenPanel/Hint
-@onready var panel: Node3D = $XROrigin3D/XRCamera3D/LumenPanel
+@onready var hint_label: Label3D = $XROrigin3D/LumenPanel/Hint
+@onready var panel: Node3D = $XROrigin3D/LumenPanel
 @onready var camera: XRCamera3D = $XROrigin3D/XRCamera3D
 @onready var hud: Node3D = $XROrigin3D/XRCamera3D/Hud
 @onready var hud_label: Label3D = $XROrigin3D/XRCamera3D/Hud/Readout
 
-const ROW_Y = [0.245, 0.160, 0.075, -0.010, -0.095, -0.180, -0.265, -0.350]
+const ROW_POS = [Vector2(-0.335, 0.20), Vector2(-0.335, 0.06), Vector2(-0.335, -0.08), Vector2(-0.335, -0.22), Vector2(0.335, 0.20), Vector2(0.335, 0.06), Vector2(0.335, -0.08), Vector2(0.335, -0.22)]
 const ROW_SHADER = preload("res://assets/menu_row.gdshader")
 const DIRECTIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 var menu_rows: Array[Label3D] = []
@@ -126,7 +126,7 @@ func _load_preferences() -> void:
 		light_mode = clampi(int(config.get_value("view", "light", 0)), 0, LIGHT_MODES.size() - 1)
 		mesh_style = clampi(int(config.get_value("view", "style", 0)), 0, MESH_STYLES.size() - 1)
 		mesh_color = clampi(int(config.get_value("view", "color", 0)), 0, COLOR_NAMES.size() - 1)
-		hud_enabled = bool(config.get_value("view", "hud", true))
+		hud_enabled = bool(config.get_value("view", "hud", true)) if int(config.get_value("view", "hud_revision", 0)) >= 7 else true
 	if is_instance_valid(hud):
 		hud.visible = hud_enabled
 
@@ -137,29 +137,30 @@ func _save_preferences() -> void:
 	config.set_value("view", "style", mesh_style)
 	config.set_value("view", "color", mesh_color)
 	config.set_value("view", "hud", hud_enabled)
+	config.set_value("view", "hud_revision", 7)
 	if config.save(SETTINGS_FILE) != OK:
 		push_warning("Unable to save Lumen Mesh preferences")
 
 
 func _build_menu() -> void:
-	for i in range(ROW_Y.size()):
+	for i in range(ROW_POS.size()):
 		var material := ShaderMaterial.new()
 		material.shader = ROW_SHADER
 		material.render_priority = 105
 		var shape := QuadMesh.new()
-		shape.size = Vector2(1.06, 0.071)
+		shape.size = Vector2(0.62, 0.115)
 		shape.material = material
 		var tile := MeshInstance3D.new()
 		tile.name = "RowSurface%d" % i
-		tile.position = Vector3(0, ROW_Y[i], 0.008)
+		tile.position = Vector3(ROW_POS[i].x, ROW_POS[i].y, 0.008)
 		tile.mesh = shape
 		panel.add_child(tile)
 		row_materials.append(material)
 		var row := Label3D.new()
 		row.name = "MenuRow%d" % i
-		row.position = Vector3(-0.50, ROW_Y[i], 0.02)
-		row.pixel_size = 0.0009
-		row.font_size = 34
+		row.position = Vector3(ROW_POS[i].x - 0.28, ROW_POS[i].y, 0.02)
+		row.pixel_size = 0.0008
+		row.font_size = 32
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		row.no_depth_test = true
 		row.render_priority = 110
@@ -170,22 +171,22 @@ func _build_menu() -> void:
 
 
 func _update_panel() -> void:
-	if menu_rows.size() != ROW_Y.size():
+	if menu_rows.size() != ROW_POS.size():
 		return
 	var mode: String = LIGHT_MODES[light_mode] if passthrough_filter else "UNAVAILABLE"
 	var mesh_state := "ON" if scene_and_spatial_anchors_displayed else "OFF"
 	var rows := [
-		"LIGHT MODE           " + mode,
-		"ROOM MESH             " + mesh_state,
-		"MESH STYLE             " + MESH_STYLES[mesh_style],
-		"MESH COLOR            " + COLOR_NAMES[mesh_color],
-		"LOW LIGHT + MESH      ENABLE",
-		"HEADS-UP DISPLAY       " + ("ON" if hud_enabled else "OFF"),
-		"SET NORTH                  " + ("SET AGAIN" if north_set else "CALIBRATE"),
-		"CAPTURE ROOM             START"
+		"Light   " + mode,
+		"Mesh   " + mesh_state,
+		"Style   " + MESH_STYLES[mesh_style],
+		"Color   " + COLOR_NAMES[mesh_color],
+		"Low light + mesh",
+		"HUD   " + ("ON" if hud_enabled else "OFF"),
+		"Set north   " + ("AGAIN" if north_set else "SET"),
+		"Rescan room"
 	]
 	for i in range(rows.size()):
-		menu_rows[i].text = (">   " if i == hovered_row else "     ") + rows[i]
+		menu_rows[i].text = (">  " if i == hovered_row else "    ") + rows[i]
 		menu_rows[i].modulate = Color(0.70, 1.0, 1.0) if i == hovered_row else Color(0.90, 0.94, 0.98)
 		row_materials[i].set_shader_parameter("highlighted", i == hovered_row)
 
@@ -200,12 +201,36 @@ func display_scene_and_spatial_anchors(value: bool) -> void:
 
 # Coordinates are local to the menu plane. Keep hit targets larger than the text.
 func _menu_row_at(point: Vector2) -> int:
-	if absf(point.x) > 0.55:
-		return -1
-	for i in range(ROW_Y.size()):
-		if absf(point.y - ROW_Y[i]) < 0.038:
+	for i in range(ROW_POS.size()):
+		var offset: Vector2 = point - ROW_POS[i]
+		if absf(offset.x) < 0.31 and absf(offset.y) < 0.06:
 			return i
 	return -1
+
+
+# Reopening places the panel in front of the user; it remains fixed in the room.
+func _menu_transform(head: Transform3D) -> Transform3D:
+	var forward := -head.basis.z
+	forward.y = 0.0
+	if forward.length_squared() < 0.01:
+		forward = Vector3.FORWARD
+	else:
+		forward = forward.normalized()
+	return Transform3D(Basis.looking_at(forward, Vector3.UP), head.origin + forward * 1.55 + Vector3.DOWN * 0.10)
+
+
+func _open_menu() -> void:
+	panel.global_transform = _menu_transform(camera.global_transform)
+	panel.visible = true
+	hovered_row = -1
+	_update_panel()
+
+
+func _request_room_capture() -> void:
+	if scene_manager.request_scene_capture():
+		hint_label.text = "FOLLOW QUEST SPACE SETUP TO RESCAN"
+	else:
+		hint_label.text = "RESCAN UNAVAILABLE  /  USE QUEST SPACE SETUP"
 
 
 func _physics_process(_delta: float) -> void:
@@ -262,6 +287,9 @@ func _activate_menu_row(index: int) -> void:
 			_save_preferences()
 			_update_panel()
 		6:
+			hud_enabled = true
+			hud.visible = true
+			_save_preferences()
 			var horizontal := _horizontal_yaw(camera.global_transform.basis)
 			if is_nan(horizontal):
 				hint_label.text = "LOOK LEVEL TO SET NORTH"
@@ -271,8 +299,7 @@ func _activate_menu_row(index: int) -> void:
 				hint_label.text = "NORTH SET  /  RECALIBRATE AFTER RECENTER"
 				_update_panel()
 		7:
-			hint_label.text = "FOLLOW THE HEADSET ROOM SETUP"
-			scene_manager.request_scene_capture()
+			_request_room_capture()
 
 
 # Local XR orientation has no geographic north. User sets it each session.
@@ -304,8 +331,8 @@ func _process(delta: float) -> void:
 		return
 	hud_update_timer = 0.5
 	var yaw := _horizontal_yaw(camera.global_transform.basis)
-	var heading := "POINT NORTH AND CALIBRATE" if not north_set else ("LOOK LEVEL" if is_nan(yaw) else _format_heading(yaw, north_yaw) + "  /  SET NORTH")
-	hud_label.text = "%s      %d FPS" % [heading, Engine.get_frames_per_second()]
+	var heading := "DIRECTION: SET NORTH" if not north_set else ("DIRECTION: LOOK LEVEL" if is_nan(yaw) else "DIRECTION: " + _format_heading(yaw, north_yaw))
+	hud_label.text = "%s    |    %d FPS    |    B: SETTINGS" % [heading, Engine.get_frames_per_second()]
 
 
 func _on_left_hand_button_pressed(name):
@@ -322,8 +349,7 @@ func _on_left_hand_button_pressed(name):
 		_apply_mesh_style()
 		_save_preferences()
 	elif name == "menu_button":
-		hint_label.text = "FOLLOW THE HEADSET'S ROOM SETUP"
-		scene_manager.request_scene_capture()
+		_request_room_capture()
 
 
 func _on_right_hand_button_pressed(name: String) -> void:
@@ -334,9 +360,11 @@ func _on_right_hand_button_pressed(name: String) -> void:
 		_apply_light_mode()
 		_save_preferences()
 	elif name == "by_button":
-		panel.visible = not panel.visible
-		if not panel.visible:
+		if panel.visible:
+			panel.visible = false
 			hovered_row = -1
+		else:
+			_open_menu()
 
 
 func _on_scene_manager_scene_capture_completed(success: bool) -> void:
