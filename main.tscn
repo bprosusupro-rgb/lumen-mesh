@@ -70,7 +70,7 @@ pixel_size = 0.0011
 font_size = 42
 horizontal_alignment = 0
 modulate = Color(0.93, 0.97, 1, 1)
-text = "Lumen Mesh   /   Settings"
+text = "Lumen Mesh"
 
 [node name="Hint" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
 no_depth_test = true
@@ -81,7 +81,19 @@ pixel_size = 0.00072
 font_size = 30
 horizontal_alignment = 0
 modulate = Color(0.58, 0.8, 0.83, 1)
-text = "POINT AND PRESS RIGHT TRIGGER  /  B CLOSES"
+text = "POINT + TRIGGER TO SELECT    /    B CLOSES"
+
+[node name="Hud" type="Node3D" parent="XROrigin3D/XRCamera3D"]
+position = Vector3(0, 0.34, -1.5)
+
+[node name="Readout" type="Label3D" parent="XROrigin3D/XRCamera3D/Hud"]
+no_depth_test = true
+render_priority = 110
+outline_render_priority = 109
+pixel_size = 0.0008
+font_size = 32
+modulate = Color(0.95, 0.98, 1, 1)
+text = "POINT NORTH AND CALIBRATE      -- FPS"
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin3D" unique_id=1145746189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.460909, 0.388594, -0.241118)

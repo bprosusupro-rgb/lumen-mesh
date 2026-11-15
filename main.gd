@@ -16,8 +16,8 @@ var light_mode := 0
 var passthrough_filter = null
 const LIGHT_MODES = ["NATURAL", "SOFT LIFT", "BRIGHT", "MONO"]
 const MESH_STYLES = ["FINE", "BOLD", "SURFACE"]
-const COLOR_NAMES = ["CYAN", "MINT", "VIOLET", "AMBER", "WHITE"]
-const MESH_COLORS = [Color(0.08, 0.9, 1.0), Color(0.15, 1.0, 0.62), Color(0.68, 0.42, 1.0), Color(1.0, 0.65, 0.2), Color(0.9, 0.96, 1.0)]
+const COLOR_NAMES = ["CYAN", "MINT", "VIOLET", "AMBER", "WHITE", "BLUE", "ROSE", "LIME", "ORANGE", "RED"]
+const MESH_COLORS = [Color(0.08, 0.9, 1.0), Color(0.15, 1.0, 0.62), Color(0.68, 0.42, 1.0), Color(1.0, 0.65, 0.2), Color(0.9, 0.96, 1.0), Color(0.25, 0.55, 1.0), Color(1.0, 0.38, 0.62), Color(0.7, 1.0, 0.2), Color(1.0, 0.42, 0.12), Color(1.0, 0.18, 0.2)]
 const MESH_MATERIAL = preload("res://assets/wireframe-material.tres")
 const SETTINGS_FILE = "user://lumen-settings.cfg"
 var mesh_style := 0
@@ -25,15 +25,26 @@ var mesh_color := 0
 
 @onready var hint_label: Label3D = $XROrigin3D/XRCamera3D/LumenPanel/Hint
 @onready var panel: Node3D = $XROrigin3D/XRCamera3D/LumenPanel
+@onready var camera: XRCamera3D = $XROrigin3D/XRCamera3D
+@onready var hud: Node3D = $XROrigin3D/XRCamera3D/Hud
+@onready var hud_label: Label3D = $XROrigin3D/XRCamera3D/Hud/Readout
 
-const ROW_Y = [0.225, 0.115, 0.005, -0.105, -0.215, -0.325]
+const ROW_Y = [0.245, 0.160, 0.075, -0.010, -0.095, -0.180, -0.265, -0.350]
+const ROW_SHADER = preload("res://assets/menu_row.gdshader")
+const DIRECTIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 var menu_rows: Array[Label3D] = []
 var hovered_row := -1
+var row_materials: Array[ShaderMaterial] = []
+var hud_enabled := true
+var north_set := false
+var north_yaw := 0.0
+var hud_update_timer := 0.0
 
 
 func _ready():
 	_build_menu()
 	super._ready()
+	pose_recentered.connect(_on_hud_recentered)
 
 	for render_model in [%LeftControllerFbRenderModel, %RightControllerFbRenderModel]:
 		render_model.openxr_fb_render_model_loaded.connect(_on_openxr_fb_render_model_loaded.bind(render_model))
@@ -115,6 +126,9 @@ func _load_preferences() -> void:
 		light_mode = clampi(int(config.get_value("view", "light", 0)), 0, LIGHT_MODES.size() - 1)
 		mesh_style = clampi(int(config.get_value("view", "style", 0)), 0, MESH_STYLES.size() - 1)
 		mesh_color = clampi(int(config.get_value("view", "color", 0)), 0, COLOR_NAMES.size() - 1)
+		hud_enabled = bool(config.get_value("view", "hud", true))
+	if is_instance_valid(hud):
+		hud.visible = hud_enabled
 
 
 func _save_preferences() -> void:
@@ -122,16 +136,29 @@ func _save_preferences() -> void:
 	config.set_value("view", "light", light_mode)
 	config.set_value("view", "style", mesh_style)
 	config.set_value("view", "color", mesh_color)
+	config.set_value("view", "hud", hud_enabled)
 	if config.save(SETTINGS_FILE) != OK:
 		push_warning("Unable to save Lumen Mesh preferences")
 
 
 func _build_menu() -> void:
 	for i in range(ROW_Y.size()):
+		var material := ShaderMaterial.new()
+		material.shader = ROW_SHADER
+		material.render_priority = 105
+		var shape := QuadMesh.new()
+		shape.size = Vector2(1.06, 0.071)
+		shape.material = material
+		var tile := MeshInstance3D.new()
+		tile.name = "RowSurface%d" % i
+		tile.position = Vector3(0, ROW_Y[i], 0.008)
+		tile.mesh = shape
+		panel.add_child(tile)
+		row_materials.append(material)
 		var row := Label3D.new()
 		row.name = "MenuRow%d" % i
 		row.position = Vector3(-0.50, ROW_Y[i], 0.02)
-		row.pixel_size = 0.001
+		row.pixel_size = 0.0009
 		row.font_size = 34
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		row.no_depth_test = true
@@ -152,12 +179,15 @@ func _update_panel() -> void:
 		"ROOM MESH             " + mesh_state,
 		"MESH STYLE             " + MESH_STYLES[mesh_style],
 		"MESH COLOR            " + COLOR_NAMES[mesh_color],
-		"LOW LIGHT + MESH    ENABLE",
-		"CAPTURE ROOM          START"
+		"LOW LIGHT + MESH      ENABLE",
+		"HEADS-UP DISPLAY       " + ("ON" if hud_enabled else "OFF"),
+		"SET NORTH                  " + ("SET AGAIN" if north_set else "CALIBRATE"),
+		"CAPTURE ROOM             START"
 	]
 	for i in range(rows.size()):
 		menu_rows[i].text = (">   " if i == hovered_row else "     ") + rows[i]
-		menu_rows[i].modulate = Color(0.37, 0.95, 1.0) if i == hovered_row else Color(0.90, 0.94, 0.98)
+		menu_rows[i].modulate = Color(0.70, 1.0, 1.0) if i == hovered_row else Color(0.90, 0.94, 0.98)
+		row_materials[i].set_shader_parameter("highlighted", i == hovered_row)
 
 
 func display_scene_and_spatial_anchors(value: bool) -> void:
@@ -173,7 +203,7 @@ func _menu_row_at(point: Vector2) -> int:
 	if absf(point.x) > 0.55:
 		return -1
 	for i in range(ROW_Y.size()):
-		if absf(point.y - ROW_Y[i]) < 0.05:
+		if absf(point.y - ROW_Y[i]) < 0.038:
 			return i
 	return -1
 
@@ -227,8 +257,55 @@ func _activate_menu_row(index: int) -> void:
 			_save_preferences()
 			hint_label.text = "MESH USES YOUR SAVED ROOM SCAN"
 		5:
+			hud_enabled = not hud_enabled
+			hud.visible = hud_enabled
+			_save_preferences()
+			_update_panel()
+		6:
+			var horizontal := _horizontal_yaw(camera.global_transform.basis)
+			if is_nan(horizontal):
+				hint_label.text = "LOOK LEVEL TO SET NORTH"
+			else:
+				north_yaw = horizontal
+				north_set = true
+				hint_label.text = "NORTH SET  /  RECALIBRATE AFTER RECENTER"
+				_update_panel()
+		7:
 			hint_label.text = "FOLLOW THE HEADSET ROOM SETUP"
 			scene_manager.request_scene_capture()
+
+
+# Local XR orientation has no geographic north. User sets it each session.
+func _horizontal_yaw(basis: Basis) -> float:
+	var forward := -basis.z
+	if Vector2(forward.x, forward.z).length() < 0.15:
+		return NAN
+	return rad_to_deg(atan2(forward.x, -forward.z))
+
+
+func _format_heading(yaw: float, reference: float) -> String:
+	var degrees := fposmod(yaw - reference, 360.0)
+	var index := int(floor((degrees + 22.5) / 45.0)) % DIRECTIONS.size()
+	return "%s  %03d°" % [DIRECTIONS[index], int(round(degrees)) % 360]
+
+
+func _on_hud_recentered() -> void:
+	north_set = false
+	if is_instance_valid(hint_label):
+		hint_label.text = "RECENTERED  /  SET NORTH AGAIN"
+	_update_panel()
+
+
+func _process(delta: float) -> void:
+	if not hud_enabled or not is_instance_valid(hud_label):
+		return
+	hud_update_timer -= delta
+	if hud_update_timer > 0.0:
+		return
+	hud_update_timer = 0.5
+	var yaw := _horizontal_yaw(camera.global_transform.basis)
+	var heading := "POINT NORTH AND CALIBRATE" if not north_set else ("LOOK LEVEL" if is_nan(yaw) else _format_heading(yaw, north_yaw) + "  /  SET NORTH")
+	hud_label.text = "%s      %d FPS" % [heading, Engine.get_frames_per_second()]
 
 
 func _on_left_hand_button_pressed(name):

@@ -6,11 +6,13 @@ This prototype uses the Godot OpenXR Vendors Meta Scene Sample and its Meta scen
 
 Enable developer mode and sideload the debug APK onto a Quest 3S with SideQuest or `adb install -r LumenMesh.apk`. Launch it from the headset's unknown sources/developer apps and grant scene access when prompted. Follow the room setup in a well-lit space.
 
-Open the settings panel with right **B**, aim the right controller at a row and press the right trigger to select it. The menu controls light mode, mesh visibility, mesh style and color, a combined **Low Light + Mesh** preset, and room capture. Right **A** also cycles light modes; left **X** toggles the mesh; left **Y** toggles passthrough; left **Trigger** cycles mesh styles; left **Grip** changes color; and left **Menu** requests a room scan. Light mode, mesh style and color are saved locally.
+Open the settings panel with right **B**, aim the right controller at a row and press the right trigger to select it. The menu controls light mode, mesh visibility, mesh style, ten mesh colors, a combined **Low Light + Mesh** preset, the heads-up display, north calibration, and room capture. Right **A** also cycles light modes; left **X** toggles the mesh; left **Y** toggles passthrough; left **Trigger** cycles mesh styles; left **Grip** changes color; and left **Menu** requests a room scan. Light mode, mesh style, color and HUD visibility are saved locally. The HUD shows the engine-reported frames per second and a heading relative to a north direction that you set yourself.
+
+To calibrate heading, use an independent compass to find north, face north with your headset level, then select **Set North** in the menu. This is a relative heading, not a magnetometer or GPS compass; recalibrate after recentering or if alignment drifts. The app clears calibration on recenter and each session.
 
 The combined preset turns on passthrough, Soft Lift and the room mesh at the same time. The mesh comes from Meta's saved room scan; it is not a live scan and may be incomplete or out of alignment. Capture the room in good light. The headset may lose tracking in dim light, and neither this preset nor the brightness adjustment can restore tracking or show unseen objects. Markers have been removed from the controls.
 
-Low-light filters need visible light and do not provide infrared or night vision. Do not rely on this app for navigation or hazard detection.
+Low-light filters need visible light and do not provide infrared or night vision. No AI object detection is included: the current passthrough layer does not supply image frames to the app, and an AI model cannot recover reliably invisible objects or restore headset tracking. Do not rely on this app for navigation or hazard detection.
 
 ## Status and build
 
