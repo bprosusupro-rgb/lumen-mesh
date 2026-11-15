@@ -176,10 +176,10 @@ func _update_panel() -> void:
 	var mode: String = LIGHT_MODES[light_mode] if passthrough_filter else "UNAVAILABLE"
 	var mesh_state := "ON" if scene_and_spatial_anchors_displayed else "OFF"
 	var rows := [
-		"Light   " + mode,
-		"Mesh   " + mesh_state,
-		"Style   " + MESH_STYLES[mesh_style],
-		"Color   " + COLOR_NAMES[mesh_color],
+		"Light   /   " + mode,
+		"Room mesh   /   " + mesh_state,
+		"Style   /   " + MESH_STYLES[mesh_style],
+		"Color   /   " + COLOR_NAMES[mesh_color],
 		"Low light + mesh",
 		"HUD   " + ("ON" if hud_enabled else "OFF"),
 		"Set north   " + ("AGAIN" if north_set else "SET"),
@@ -334,7 +334,9 @@ func _process(delta: float) -> void:
 	var heading := "DIRECTION: SET NORTH" if not north_set else ("DIRECTION: LOOK LEVEL" if is_nan(yaw) else "DIRECTION: " + _format_heading(yaw, north_yaw))
 	var mesh_status := "MESH ON" if scene_and_spatial_anchors_displayed else "MESH OFF"
 	var view_status: String = LIGHT_MODES[light_mode] if passthrough_enabled else "VIEW OFF"
-	hud_label.text = "%s   |   %d FPS\n%s   |   %s   |   B: SETTINGS" % [heading, Engine.get_frames_per_second(), view_status, mesh_status]
+	var now := Time.get_time_dict_from_system()
+	var clock := "%02d:%02d" % [now.hour, now.minute]
+	hud_label.text = "%s   |   %s   |   %d FPS\n%s   |   %s   |   B: SETTINGS" % [heading, clock, Engine.get_frames_per_second(), view_status, mesh_status]
 
 
 func _on_left_hand_button_pressed(name):
