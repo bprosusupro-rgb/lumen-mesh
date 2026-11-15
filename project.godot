@@ -78,6 +78,7 @@ META_ENVIRONMENT_DEPTH_TEXEL_SIZE={
 
 openxr/enabled=true
 openxr/reference_space=1
+openxr/extensions/hand_tracking=true
 shaders/enabled=true
 openxr/extensions/meta/passthrough=true
 openxr/extensions/meta/render_model=true

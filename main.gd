@@ -39,6 +39,12 @@ var hud_enabled := true
 var north_set := false
 var north_yaw := 0.0
 var hud_update_timer := 0.0
+var right_pinched := false
+var left_pinched := false
+@onready var hand_pointer: Node3D = $XROrigin3D/HandPointer
+@onready var hand_beam: MeshInstance3D = $XROrigin3D/HandPointer/Beam
+@onready var hand_dot: MeshInstance3D = $XROrigin3D/HandPointer/Dot
+@onready var xr_origin: XROrigin3D = $XROrigin3D
 
 
 func _ready():
@@ -233,13 +239,60 @@ func _request_room_capture() -> void:
 		hint_label.text = "RESCAN UNAVAILABLE  /  USE QUEST SPACE SETUP"
 
 
+# Hand joints are reported in XR-origin space; missing/invalid joints never generate clicks.
+func _hand_sample(path: StringName) -> Dictionary:
+	var tracker = XRServer.get_tracker(path)
+	if not tracker is XRHandTracker:
+		return {}
+	var ids := [XRHandTracker.HAND_JOINT_WRIST, XRHandTracker.HAND_JOINT_INDEX_FINGER_TIP, XRHandTracker.HAND_JOINT_THUMB_TIP]
+	for id in ids:
+		if (tracker.get_hand_joint_flags(id) & XRHandTracker.HAND_JOINT_FLAG_POSITION_VALID) == 0:
+			return {}
+	return {"wrist": tracker.get_hand_joint_transform(ids[0]).origin,
+		"index": tracker.get_hand_joint_transform(ids[1]).origin,
+		"thumb": tracker.get_hand_joint_transform(ids[2]).origin}
+
+
+func _pinch_state(sample: Dictionary, previous: bool) -> bool:
+	if sample.is_empty():
+		return false
+	var threshold := 0.045 if previous else 0.025
+	return sample["index"].distance_to(sample["thumb"]) < threshold
+
+
 func _physics_process(_delta: float) -> void:
+	var left := _hand_sample(&"/user/hand_tracker/left")
+	var left_now := _pinch_state(left, left_pinched)
+	if left_now and not left_pinched:
+		if panel.visible:
+			panel.visible = false
+		else:
+			_open_menu()
+	left_pinched = left_now
+
+	var right := _hand_sample(&"/user/hand_tracker/right")
+	var right_now := _pinch_state(right, right_pinched)
+	var hand_active := false
+	if not right.is_empty():
+		var direction_local: Vector3 = right["index"] - right["wrist"]
+		if direction_local.length() > 0.04:
+			var direction_world := (xr_origin.global_transform.basis * direction_local).normalized()
+			if absf(direction_world.dot(Vector3.UP)) < 0.98:
+				hand_pointer.global_transform = Transform3D(Basis.looking_at(direction_world, Vector3.UP), xr_origin.global_transform * right["index"])
+				hand_active = true
+	var pointer: Node3D = hand_pointer if hand_active else right_hand_pointer
+	var beam: MeshInstance3D = hand_beam if hand_active else scene_pointer_mesh
+	var dot: MeshInstance3D = hand_dot if hand_active else scene_colliding_mesh
+	var show_pointer := panel.visible and (hand_active or right_hand_pointer.get_is_active())
+	hand_pointer.visible = show_pointer and hand_active
+	scene_pointer_mesh.visible = show_pointer and not hand_active
+	scene_colliding_mesh.visible = false
+	hand_dot.visible = false
 	var hit := -1
 	var distance := 2.0
-	var show_pointer := panel.visible and right_hand_pointer.get_is_active()
 	if show_pointer:
-		var origin := panel.to_local(right_hand_pointer.global_position)
-		var direction := panel.global_transform.basis.inverse() * -right_hand_pointer.global_transform.basis.z
+		var origin := panel.to_local(pointer.global_position)
+		var direction := panel.global_transform.basis.inverse() * -pointer.global_transform.basis.z
 		if direction.z < -0.001:
 			var t := -origin.z / direction.z
 			if t > 0.0 and t < 5.0:
@@ -247,15 +300,16 @@ func _physics_process(_delta: float) -> void:
 				hit = _menu_row_at(Vector2(point.x, point.y))
 				if hit >= 0:
 					distance = t
-					scene_colliding_mesh.position = Vector3(0, 0, -t)
-	scene_pointer_mesh.visible = show_pointer
-	scene_colliding_mesh.visible = show_pointer and hit >= 0
-	if show_pointer:
-		scene_pointer_mesh.mesh.size.z = distance
-		scene_pointer_mesh.position.z = -distance / 2.0
+					dot.position = Vector3(0, 0, -t)
+					dot.visible = true
+		beam.mesh.size.z = distance
+		beam.position.z = -distance / 2.0
 	if hit != hovered_row:
 		hovered_row = hit
 		_update_panel()
+	if hand_active and right_now and not right_pinched and panel.visible and hit >= 0:
+		_activate_menu_row(hit)
+	right_pinched = right_now
 
 
 func _activate_menu_row(index: int) -> void:
