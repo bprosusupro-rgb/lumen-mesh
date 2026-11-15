@@ -13,6 +13,9 @@ var scene_and_spatial_anchors_displayed: bool = true
 
 var _setup := false
 var light_mode := 0
+var live_depth_enabled := false
+var live_depth_node: MeshInstance3D
+var depth_extension
 var passthrough_filter = null
 const LIGHT_MODES = ["DAY", "SOFT LIFT", "BRIGHT", "MONO"]
 const MESH_STYLES = ["FINE", "BOLD", "SURFACE"]
@@ -70,6 +73,8 @@ func _on_openxr_session_begun() -> void:
 	enable_passthrough(true)
 	passthrough_filter = Engine.get_singleton("OpenXRFbPassthroughExtension")
 	_apply_light_mode()
+	depth_extension = Engine.get_singleton("OpenXRMetaEnvironmentDepthExtension")
+	_build_live_depth()
 	_update_panel()
 
 
@@ -123,6 +128,44 @@ func _apply_mesh_style() -> void:
 	MESH_MATERIAL.set_shader_parameter("wire_color", Color(color.r, color.g, color.b, edge_alpha))
 	MESH_MATERIAL.set_shader_parameter("albedo", Color(color.r, color.g, color.b, fill_alpha))
 	MESH_MATERIAL.set_shader_parameter("wire_width", width)
+	_update_panel()
+
+
+func _build_live_depth() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var columns := 96
+	var rows := 72
+	for y in range(rows):
+		for x in range(columns):
+			var a := Vector2(float(x) / columns, float(y) / rows)
+			var b := Vector2(float(x + 1) / columns, float(y + 1) / rows)
+			for uv in [a, Vector2(b.x, a.y), b, a, b, Vector2(a.x, b.y)]:
+				st.set_uv(uv)
+				st.add_vertex(Vector3(uv.x, uv.y, 0))
+	var material := ShaderMaterial.new()
+	material.shader = load("res://assets/live_depth.gdshader")
+	live_depth_node = MeshInstance3D.new()
+	live_depth_node.mesh = st.commit()
+	live_depth_node.material_override = material
+	live_depth_node.extra_cull_margin = 10000.0
+	live_depth_node.visible = false
+	xr_origin.add_child(live_depth_node)
+
+
+func _toggle_live_depth() -> void:
+	if not depth_extension or not depth_extension.is_environment_depth_supported():
+		hint_label.text = "LIVE DEPTH UNAVAILABLE ON THIS DEVICE"
+		return
+	if live_depth_enabled:
+		depth_extension.stop_environment_depth()
+		live_depth_enabled = false
+		live_depth_node.visible = false
+	else:
+		depth_extension.start_environment_depth()
+		live_depth_enabled = depth_extension.is_environment_depth_started()
+		live_depth_node.visible = live_depth_enabled
+		hint_label.text = "LIVE DEPTH: FRONT VIEW ONLY" if live_depth_enabled else "LIVE DEPTH COULD NOT START"
 	_update_panel()
 
 
@@ -186,7 +229,7 @@ func _update_panel() -> void:
 		"Room mesh   /   " + mesh_state,
 		"Style   /   " + MESH_STYLES[mesh_style],
 		"Color   /   " + COLOR_NAMES[mesh_color],
-		"Low light + mesh",
+		"Live depth   /   " + ("ON" if live_depth_enabled else "OFF"),
 		"HUD   " + ("ON" if hud_enabled else "OFF"),
 		"Set north   " + ("AGAIN" if north_set else "SET"),
 		"Rescan room"
@@ -329,12 +372,7 @@ func _activate_menu_row(index: int) -> void:
 			_apply_mesh_style()
 			_save_preferences()
 		4:
-			light_mode = 1
-			enable_passthrough(true)
-			display_scene_and_spatial_anchors(true)
-			_apply_light_mode()
-			_save_preferences()
-			hint_label.text = "MESH USES YOUR SAVED ROOM SCAN"
+			_toggle_live_depth()
 		5:
 			hud_enabled = not hud_enabled
 			hud.visible = hud_enabled
@@ -387,6 +425,8 @@ func _process(delta: float) -> void:
 	var yaw := _horizontal_yaw(camera.global_transform.basis)
 	var heading := "DIRECTION: SET NORTH" if not north_set else ("DIRECTION: LOOK LEVEL" if is_nan(yaw) else "DIRECTION: " + _format_heading(yaw, north_yaw))
 	var mesh_status := "MESH ON" if scene_and_spatial_anchors_displayed else "MESH OFF"
+	if live_depth_enabled:
+		mesh_status += " / LIVE"
 	var view_status: String = LIGHT_MODES[light_mode] if passthrough_enabled else "VIEW OFF"
 	var now := Time.get_time_dict_from_system()
 	var clock := "%02d:%02d" % [now.hour, now.minute]

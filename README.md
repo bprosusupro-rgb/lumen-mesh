@@ -19,3 +19,7 @@ Low-light filters need visible light and do not provide infrared or night vision
 ## Status and build
 
 A headset was not available for testing. Open the project in Godot 4.6.3 with Android export templates and a supported Android SDK/JDK installed. Install the Android build template from Project > Install Android Build Template and use the Meta Quest Android export preset. The source includes Godot OpenXR Vendors 5.2.0 and retains its license files. Derived from https://github.com/GodotVR/godot_openxr_vendors (Meta Scene Sample).
+
+## Experimental live depth surface
+
+In Settings select **Live depth** to request Meta Environment Depth and display a translucent surface reconstructed from the latest front-facing depth frame. Turn it off in the same menu. It does not accumulate a full-room mesh and can contain gaps, warped geometry, latency or flicker; the saved room mesh remains separate. The feature is disabled by default and has not been tested on a Quest. If the runtime or permission is unavailable, the app reports that it could not start. Never use it for navigation or hazard detection. Low-light filters do not change what the sensors can capture or recover tracking.
