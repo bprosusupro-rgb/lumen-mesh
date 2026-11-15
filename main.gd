@@ -128,6 +128,8 @@ func _apply_mesh_style() -> void:
 	MESH_MATERIAL.set_shader_parameter("wire_color", Color(color.r, color.g, color.b, edge_alpha))
 	MESH_MATERIAL.set_shader_parameter("albedo", Color(color.r, color.g, color.b, fill_alpha))
 	MESH_MATERIAL.set_shader_parameter("wire_width", width)
+	if is_instance_valid(live_depth_node) and live_depth_node.material_override:
+		live_depth_node.material_override.set_shader_parameter("live_color", color)
 	_update_panel()
 
 
@@ -145,6 +147,7 @@ func _build_live_depth() -> void:
 				st.add_vertex(Vector3(uv.x, uv.y, 0))
 	var material := ShaderMaterial.new()
 	material.shader = load("res://assets/live_depth.gdshader")
+	material.set_shader_parameter("live_color", MESH_COLORS[mesh_color])
 	live_depth_node = MeshInstance3D.new()
 	live_depth_node.mesh = st.commit()
 	live_depth_node.material_override = material
@@ -165,7 +168,7 @@ func _toggle_live_depth() -> void:
 		depth_extension.start_environment_depth()
 		live_depth_enabled = depth_extension.is_environment_depth_started()
 		live_depth_node.visible = live_depth_enabled
-		hint_label.text = "LIVE DEPTH: FRONT VIEW ONLY" if live_depth_enabled else "LIVE DEPTH COULD NOT START"
+		hint_label.text = "LIVE DEPTH ON  /  CHECK SPATIAL DATA PERMISSION" if live_depth_enabled else "LIVE DEPTH COULD NOT START"
 	_update_panel()
 
 
