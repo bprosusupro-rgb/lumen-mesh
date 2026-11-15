@@ -372,7 +372,7 @@ func _on_right_hand_button_pressed(name: String) -> void:
 
 
 func _on_scene_manager_scene_capture_completed(success: bool) -> void:
-	hint_label.text = "SCAN COMPLETE" if success else "SCAN CANCELLED OR UNAVAILABLE"
+	hint_label.text = "ROOM SCAN UPDATED" if success else "SCAN CANCELLED OR UNAVAILABLE"
 	if success:
 		# Recreate scene anchors since the user may have changed them.
 		if scene_manager.are_scene_anchors_created():
