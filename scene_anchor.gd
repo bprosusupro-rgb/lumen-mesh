@@ -12,6 +12,7 @@ func setup_scene(entity: OpenXRFbSpatialEntity) -> void:
 	var semantic_labels: PackedStringArray = entity.get_semantic_labels()
 
 	label.text = ", ".join(Array(semantic_labels).map(func(x): return x.capitalize()))
+	label.visible = false
 
 	var collision_shape = entity.create_collision_shape()
 	if collision_shape:
@@ -32,6 +33,8 @@ func setup_scene(entity: OpenXRFbSpatialEntity) -> void:
 		material.uv1_scale = Vector3(3, 2, 1)
 	mesh_instance.set_surface_override_material(0, material)
 
+	# Keep semantic collisions for markers; the room mesh is the visible layer.
+	mesh_instance.visible = false
 	add_child(mesh_instance)
 
 

@@ -6,7 +6,9 @@ This prototype uses the Godot OpenXR Vendors Meta Scene Sample and its Meta scen
 
 Enable developer mode and sideload the debug APK onto a Quest 3S with SideQuest or `adb install -r LumenMesh.apk`. Launch it from the headset's unknown sources/developer apps and grant scene access when prompted. Follow the room setup in a well-lit space.
 
-The in-headset panel shows the current view, mesh, and light mode. Right **A** cycles Natural, Low Light, and Low Light+ passthrough filters; right **B** hides or shows the panel. Left **X** toggles the room mesh, left **Y** toggles passthrough, and left **Menu** requests a room scan/update. Right **Trigger** adds or removes markers.
+The in-headset panel shows the current view, mesh style, color, and light mode. Right **A** cycles Natural, Soft Lift, Bright, and Mono passthrough modes; right **B** hides or shows the panel. Left **X** toggles the room mesh; left **Y** toggles passthrough. Left **Trigger** cycles Fine, Bold, and Surface mesh styles, and left **Grip** cycles mesh colors. Left **Menu** requests a room scan/update. Right **Trigger** adds or removes markers. The app remembers the light mode, mesh style and color on the device.
+
+The mesh defaults to a subtler thin wireframe, and overlapping room-object labels and colored shapes are hidden. Your device's available room mesh may still be dense or incomplete.
 
 The low-light modes adjust passthrough brightness and contrast. They need visible light and may amplify noise, flatten detail, or fail on unsupported runtimes. They are not infrared or night vision and cannot reveal objects in total darkness. Do not rely on the app for navigation or hazard detection. The Quest 3S's infrared tracking images are not available to this ordinary app.
 

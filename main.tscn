@@ -31,11 +31,13 @@ height = 0.02
 [sub_resource type="StandardMaterial3D" id="LumenPanelMaterial"]
 transparency = 1
 shading_mode = 0
-albedo_color = Color(0.015, 0.035, 0.065, 0.94)
+no_depth_test = true
+render_priority = 100
+albedo_color = Color(0.012, 0.025, 0.05, 0.98)
 
 [sub_resource type="BoxMesh" id="LumenPanelMesh"]
 material = SubResource("LumenPanelMaterial")
-size = Vector3(1.14, 0.72, 0.012)
+size = Vector3(1.22, 0.90, 0.012)
 
 [node name="Main" type="Node3D" unique_id=1577214552]
 script = ExtResource("1_fsva1")
@@ -54,13 +56,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.352791, 0)
 [node name="OpenXRMetaEnvironmentDepth" type="OpenXRMetaEnvironmentDepth" parent="XROrigin3D/XRCamera3D" unique_id=336242745]
 
 [node name="LumenPanel" type="Node3D" parent="XROrigin3D/XRCamera3D"]
-position = Vector3(0.45, -0.32, -1.55)
+position = Vector3(0, -0.19, -1.48)
 
 [node name="Background" type="MeshInstance3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
 mesh = SubResource("LumenPanelMesh")
 
 [node name="Title" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
-position = Vector3(-0.50, 0.29, 0.012)
+no_depth_test = true
+render_priority = 110
+outline_render_priority = 109
+position = Vector3(-0.54, 0.36, 0.012)
 pixel_size = 0.0011
 font_size = 42
 horizontal_alignment = 0
@@ -68,27 +73,36 @@ modulate = Color(0.36, 0.95, 1, 1)
 text = "L U M E N   M E S H"
 
 [node name="Status" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
-position = Vector3(-0.50, 0.18, 0.012)
+no_depth_test = true
+render_priority = 110
+outline_render_priority = 109
+position = Vector3(-0.54, 0.23, 0.012)
 pixel_size = 0.00095
 font_size = 38
 horizontal_alignment = 0
 text = "VIEW  STARTING     MESH  ON\nLIGHT  NATURAL"
 
 [node name="Controls" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
-position = Vector3(-0.50, 0.02, 0.012)
+no_depth_test = true
+render_priority = 110
+outline_render_priority = 109
+position = Vector3(-0.54, 0.00, 0.012)
 pixel_size = 0.00085
 font_size = 34
 horizontal_alignment = 0
 modulate = Color(0.82, 0.9, 0.98, 1)
-text = "A   Cycle low-light modes\nB   Hide / show this panel\nX   Toggle room mesh\nY   Toggle passthrough\nLeft Menu   Capture room\nRight Trigger   Place / remove marker"
+text = "RIGHT   A  Light mode   /   B  Panel\nLEFT     X  Mesh on/off   /   Y  View on/off\nLEFT     Trigger  Mesh style   /   Grip  Color\nLEFT     Menu  Capture room\nRIGHT   Trigger  Place / remove marker"
 
 [node name="Hint" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
-position = Vector3(-0.50, -0.26, 0.012)
+no_depth_test = true
+render_priority = 110
+outline_render_priority = 109
+position = Vector3(-0.54, -0.36, 0.012)
 pixel_size = 0.00072
 font_size = 30
 horizontal_alignment = 0
 modulate = Color(0.98, 0.75, 0.4, 1)
-text = "LOW LIGHT NEEDS SOME VISIBLE LIGHT"
+text = "LOW LIGHT REQUIRES VISIBLE LIGHT"
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin3D" unique_id=1145746189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.460909, 0.388594, -0.241118)

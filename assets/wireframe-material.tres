@@ -6,6 +6,6 @@
 render_priority = 0
 shader = ExtResource("1_f1auu")
 shader_parameter/albedo = Color(1, 1, 1, 0)
-shader_parameter/wire_color = Color(0.12, 0.9, 1, 0.75)
-shader_parameter/wire_width = 1.5
-shader_parameter/wire_smoothness = 0.033
+shader_parameter/wire_color = Color(0.12, 0.9, 1, 0.25)
+shader_parameter/wire_width = 0.5
+shader_parameter/wire_smoothness = 0.0

@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode unshaded, cull_disabled;
 
 // Shader code copied from:
 //   https://godotshaders.com/shader/wireframe-shader-godot-4-0/
