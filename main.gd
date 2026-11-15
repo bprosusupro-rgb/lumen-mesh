@@ -332,7 +332,9 @@ func _process(delta: float) -> void:
 	hud_update_timer = 0.5
 	var yaw := _horizontal_yaw(camera.global_transform.basis)
 	var heading := "DIRECTION: SET NORTH" if not north_set else ("DIRECTION: LOOK LEVEL" if is_nan(yaw) else "DIRECTION: " + _format_heading(yaw, north_yaw))
-	hud_label.text = "%s    |    %d FPS    |    B: SETTINGS" % [heading, Engine.get_frames_per_second()]
+	var mesh_status := "MESH ON" if scene_and_spatial_anchors_displayed else "MESH OFF"
+	var view_status: String = LIGHT_MODES[light_mode] if passthrough_enabled else "VIEW OFF"
+	hud_label.text = "%s   |   %d FPS\n%s   |   %s   |   B: SETTINGS" % [heading, Engine.get_frames_per_second(), view_status, mesh_status]
 
 
 func _on_left_hand_button_pressed(name):

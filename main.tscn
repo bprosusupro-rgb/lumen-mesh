@@ -43,7 +43,7 @@ size = Vector2(1.40, 0.92)
 
 [sub_resource type="QuadMesh" id="HudMesh"]
 material = SubResource("LumenPanelMaterial")
-size = Vector2(1.22, 0.10)
+size = Vector2(1.22, 0.16)
 
 [node name="Main" type="Node3D" unique_id=1577214552]
 script = ExtResource("1_fsva1")
@@ -101,7 +101,7 @@ outline_render_priority = 109
 pixel_size = 0.0008
 font_size = 32
 modulate = Color(0.95, 0.98, 1, 1)
-text = "DIRECTION: SET NORTH    |    -- FPS    |    B: SETTINGS"
+text = "DIRECTION: SET NORTH   |   -- FPS\nDAY   |   MESH ON   |   B: SETTINGS"
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin3D" unique_id=1145746189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.460909, 0.388594, -0.241118)
