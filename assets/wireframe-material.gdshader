@@ -29,7 +29,8 @@ void vertex() {
 
 void fragment() {
 	vec3 deltas = fwidth(barys);
-	vec3 barys_s = smoothstep(deltas * wire_width - wire_smoothness, deltas * wire_width + wire_smoothness, barys);
+	vec3 edge = max(deltas * wire_width, vec3(0.00001));
+	vec3 barys_s = smoothstep(vec3(0.0), edge + vec3(wire_smoothness), barys);
 	float wires = min(barys_s.x, min(barys_s.y, barys_s.z));
 	vec4 color = mix(wire_color.rgba, albedo.rgba, wires);
 	ALBEDO = color.rgb;

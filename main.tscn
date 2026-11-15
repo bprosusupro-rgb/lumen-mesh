@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://cqsodpswgup8w"]
 
 [ext_resource type="Script" uid="uid://cfxf4wpwr3y2p" path="res://main.gd" id="1_fsva1"]
-[ext_resource type="Material" uid="uid://cwrr7pbpfsfk1" path="res://blue_material.tres" id="2_lquwl"]
 [ext_resource type="PackedScene" uid="uid://bcjp8kcgde4cs" path="res://scene_anchor.tscn" id="4_3u3ah"]
 [ext_resource type="PackedScene" uid="uid://bwo5nq0clfe3c" path="res://scene_global_mesh.tscn" id="5_7ikgf"]
 [ext_resource type="PackedScene" uid="uid://dsfd7xrm6o50p" path="res://spatial_anchor.tscn" id="5_g7mio"]
+[ext_resource type="Shader" path="res://assets/panel.gdshader" id="9_panel_shader"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_0x6cv"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
@@ -18,9 +18,6 @@ background_mode = 1
 background_color = Color(0.3, 0.3, 0.3, 1)
 sky = SubResource("Sky_dqyx0")
 
-[sub_resource type="BoxMesh" id="BoxMesh_7mycd"]
-size = Vector3(0.1, 0.1, 0.1)
-
 [sub_resource type="BoxMesh" id="BoxMesh_d27jm"]
 size = Vector3(0.01, 0.01, 5)
 
@@ -28,16 +25,13 @@ size = Vector3(0.01, 0.01, 5)
 radius = 0.01
 height = 0.02
 
-[sub_resource type="StandardMaterial3D" id="LumenPanelMaterial"]
-transparency = 1
-shading_mode = 0
-no_depth_test = true
+[sub_resource type="ShaderMaterial" id="LumenPanelMaterial"]
 render_priority = 100
-albedo_color = Color(0.012, 0.025, 0.05, 0.98)
+shader = ExtResource("9_panel_shader")
 
-[sub_resource type="BoxMesh" id="LumenPanelMesh"]
+[sub_resource type="QuadMesh" id="LumenPanelMesh"]
 material = SubResource("LumenPanelMaterial")
-size = Vector3(1.22, 0.90, 0.012)
+size = Vector2(1.22, 0.90)
 
 [node name="Main" type="Node3D" unique_id=1577214552]
 script = ExtResource("1_fsva1")
@@ -53,8 +47,6 @@ transform = Transform3D(0.677077, -0.692092, 0.25015, 0.264251, 0.545897, 0.7950
 [node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D" unique_id=1244728037]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.352791, 0)
 
-[node name="OpenXRMetaEnvironmentDepth" type="OpenXRMetaEnvironmentDepth" parent="XROrigin3D/XRCamera3D" unique_id=336242745]
-
 [node name="LumenPanel" type="Node3D" parent="XROrigin3D/XRCamera3D"]
 position = Vector3(0, -0.19, -1.48)
 
@@ -69,8 +61,8 @@ position = Vector3(-0.54, 0.36, 0.012)
 pixel_size = 0.0011
 font_size = 42
 horizontal_alignment = 0
-modulate = Color(0.36, 0.95, 1, 1)
-text = "L U M E N   M E S H"
+modulate = Color(0.93, 0.97, 1, 1)
+text = "Lumen Mesh"
 
 [node name="Status" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
 no_depth_test = true
@@ -90,7 +82,7 @@ position = Vector3(-0.54, 0.00, 0.012)
 pixel_size = 0.00085
 font_size = 34
 horizontal_alignment = 0
-modulate = Color(0.82, 0.9, 0.98, 1)
+modulate = Color(0.74, 0.81, 0.88, 1)
 text = "RIGHT   A  Light mode   /   B  Panel\nLEFT     X  Mesh on/off   /   Y  View on/off\nLEFT     Trigger  Mesh style   /   Grip  Color\nLEFT     Menu  Capture room\nRIGHT   Trigger  Place / remove marker"
 
 [node name="Hint" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
@@ -101,7 +93,7 @@ position = Vector3(-0.54, -0.36, 0.012)
 pixel_size = 0.00072
 font_size = 30
 horizontal_alignment = 0
-modulate = Color(0.98, 0.75, 0.4, 1)
+modulate = Color(0.58, 0.8, 0.83, 1)
 text = "LOW LIGHT REQUIRES VISIBLE LIGHT"
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin3D" unique_id=1145746189]
@@ -130,12 +122,6 @@ unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, -0.124379, -0.185838)
 pixel_size = 0.001
 visible = false
-
-[node name="DepthTestingMesh" type="MeshInstance3D" parent="XROrigin3D/RightHand" unique_id=678136150]
-visible = false
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4551915e-11, 1.4551915e-11, -0.35)
-mesh = SubResource("BoxMesh_7mycd")
-surface_material_override/0 = ExtResource("2_lquwl")
 
 [node name="RightHandPointer" type="XRController3D" parent="XROrigin3D" unique_id=1157989773]
 tracker = &"right_hand"

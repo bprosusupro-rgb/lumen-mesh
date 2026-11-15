@@ -10,7 +10,7 @@ The in-headset panel shows the current view, mesh style, color, and light mode. 
 
 The mesh defaults to a subtler thin wireframe, and overlapping room-object labels and colored shapes are hidden. Your device's available room mesh may still be dense or incomplete.
 
-The low-light modes adjust passthrough brightness and contrast. They need visible light and may amplify noise, flatten detail, or fail on unsupported runtimes. They are not infrared or night vision and cannot reveal objects in total darkness. Do not rely on the app for navigation or hazard detection. The Quest 3S's infrared tracking images are not available to this ordinary app.
+The app requests a 72 Hz display rate when available, disables unused environment depth, and uses a stable anti-aliased mesh edge calculation. The low-light modes adjust passthrough brightness and contrast. They need visible light and may amplify noise, flatten detail, or fail on unsupported runtimes. They are not infrared or night vision and cannot reveal objects in total darkness. Do not rely on the app for navigation or hazard detection. The Quest 3S's infrared tracking images are not available to this ordinary app.
 
 ## Status and build
 

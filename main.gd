@@ -1,12 +1,8 @@
 extends StartXR
 
-const ENVIRONMENT_DEPTH_MATERIAL = preload("res://environment_depth_material.tres")
-const BLUE_MATERIAL = preload("res://blue_material.tres")
-
 var passthrough_enabled: bool = false
 var scene_and_spatial_anchors_displayed: bool = true
 var selected_spatial_anchor_node: Node3D = null
-var global_environment_depth_enabled: bool = true
 
 @onready var left_hand: XRController3D = $XROrigin3D/LeftHand
 @onready var right_hand: XRController3D = $XROrigin3D/RightHand
@@ -17,9 +13,6 @@ var global_environment_depth_enabled: bool = true
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var scene_manager: OpenXRFbSceneManager = $XROrigin3D/OpenXRFbSceneManager
 @onready var spatial_anchor_manager: OpenXRFbSpatialAnchorManager = $XROrigin3D/OpenXRFbSpatialAnchorManager
-# Don't statically type this as `OpenXRMetaEnvironmentDepth` because it doesn't exist on Godot 4.4.
-@onready var environment_depth_node = $XROrigin3D/XRCamera3D/OpenXRMetaEnvironmentDepth
-@onready var depth_testing_mesh: MeshInstance3D = $XROrigin3D/RightHand/DepthTestingMesh
 
 const SPATIAL_ANCHORS_FILE = "user://openxr_fb_spatial_anchors.json"
 
@@ -63,6 +56,10 @@ func _on_openxr_session_begun() -> void:
 		return
 	_setup = true
 
+	# Meta recommends 72 Hz for Quest passthrough where supported.
+	if 72.0 in xr_interface.get_available_display_refresh_rates():
+		xr_interface.set_display_refresh_rate(72.0)
+	Engine.physics_ticks_per_second = 72
 	_load_preferences()
 	_apply_mesh_style()
 	load_spatial_anchors_from_file()
@@ -70,14 +67,6 @@ func _on_openxr_session_begun() -> void:
 	passthrough_filter = Engine.get_singleton("OpenXRFbPassthroughExtension")
 	_apply_light_mode()
 	_update_panel()
-
-	var environment_depth = Engine.get_singleton("OpenXRMetaEnvironmentDepthExtension")
-	if environment_depth:
-		print("Supports environment depth: ", environment_depth.is_environment_depth_supported())
-		print("Supports hand removal: ", environment_depth.is_hand_removal_supported())
-		if environment_depth.is_environment_depth_supported():
-			environment_depth.start_environment_depth()
-			print("Environment depth started: ", environment_depth.is_environment_depth_started())
 
 
 func load_spatial_anchors_from_file() -> void:
@@ -158,10 +147,10 @@ func _apply_light_mode() -> void:
 	if light_mode == 0:
 		passthrough_filter.set_passthrough_filter(OpenXRFbPassthroughExtension.PASSTHROUGH_FILTER_DISABLED)
 	else:
-		var settings := [Vector3.ZERO, Vector3(0.14, 1.05, 1.0), Vector3(0.30, 1.12, 0.90), Vector3(0.22, 1.14, 0.0)]
+		var settings := [Vector3.ZERO, Vector3(0.10, 1.0, 1.0), Vector3(0.22, 1.04, 0.95), Vector3(0.15, 1.06, 0.0)]
 		var values: Vector3 = settings[light_mode]
+		# This setter also selects the brightness/contrast filter.
 		passthrough_filter.set_brightness_contrast_saturation(values.x, values.y, values.z)
-		passthrough_filter.set_passthrough_filter(OpenXRFbPassthroughExtension.PASSTHROUGH_FILTER_BRIGHTNESS_CONTRAST_SATURATION)
 	_update_panel()
 
 
