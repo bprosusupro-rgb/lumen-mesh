@@ -8,15 +8,6 @@ var mesh_instance: MeshInstance3D
 
 
 func setup_scene(entity: OpenXRFbSpatialEntity) -> void:
-	var collision_shape = entity.create_collision_shape()
-	if collision_shape:
-		static_body.add_child(collision_shape)
-
-	#mesh_instance = entity.create_mesh_instance()
-	#if mesh_instance:
-	#	mesh_instance.set_surface_override_material(0, WIREFRAME_MATERIAL)
-	#	add_child(mesh_instance)
-
 	# Calling entity.create_mesh_instance() works, however, our wireframe shader only
 	# works right if vertices aren't shared among multiple triangles, so we have to
 	# process the mesh data to ensure that.

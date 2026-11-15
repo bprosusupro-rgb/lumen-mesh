@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://cfxf4wpwr3y2p" path="res://main.gd" id="1_fsva1"]
 [ext_resource type="PackedScene" uid="uid://bcjp8kcgde4cs" path="res://scene_anchor.tscn" id="4_3u3ah"]
 [ext_resource type="PackedScene" uid="uid://bwo5nq0clfe3c" path="res://scene_global_mesh.tscn" id="5_7ikgf"]
-[ext_resource type="PackedScene" uid="uid://dsfd7xrm6o50p" path="res://spatial_anchor.tscn" id="5_g7mio"]
 [ext_resource type="Shader" path="res://assets/panel.gdshader" id="9_panel_shader"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_0x6cv"]
@@ -18,10 +17,19 @@ background_mode = 1
 background_color = Color(0.3, 0.3, 0.3, 1)
 sky = SubResource("Sky_dqyx0")
 
+[sub_resource type="StandardMaterial3D" id="PointerMaterial"]
+transparency = 1
+render_priority = 120
+shading_mode = 0
+no_depth_test = true
+albedo_color = Color(0.25, 0.92, 1, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_d27jm"]
-size = Vector3(0.01, 0.01, 5)
+material = SubResource("PointerMaterial")
+size = Vector3(0.004, 0.004, 2)
 
 [sub_resource type="SphereMesh" id="SphereMesh_kdpqm"]
+material = SubResource("PointerMaterial")
 radius = 0.01
 height = 0.02
 
@@ -62,39 +70,18 @@ pixel_size = 0.0011
 font_size = 42
 horizontal_alignment = 0
 modulate = Color(0.93, 0.97, 1, 1)
-text = "Lumen Mesh"
-
-[node name="Status" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
-no_depth_test = true
-render_priority = 110
-outline_render_priority = 109
-position = Vector3(-0.54, 0.23, 0.012)
-pixel_size = 0.00095
-font_size = 38
-horizontal_alignment = 0
-text = "VIEW  STARTING     MESH  ON\nLIGHT  NATURAL"
-
-[node name="Controls" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
-no_depth_test = true
-render_priority = 110
-outline_render_priority = 109
-position = Vector3(-0.54, 0.00, 0.012)
-pixel_size = 0.00085
-font_size = 34
-horizontal_alignment = 0
-modulate = Color(0.74, 0.81, 0.88, 1)
-text = "RIGHT   A  Light mode   /   B  Panel\nLEFT     X  Mesh on/off   /   Y  View on/off\nLEFT     Trigger  Mesh style   /   Grip  Color\nLEFT     Menu  Capture room\nRIGHT   Trigger  Place / remove marker"
+text = "Lumen Mesh   /   Settings"
 
 [node name="Hint" type="Label3D" parent="XROrigin3D/XRCamera3D/LumenPanel"]
 no_depth_test = true
 render_priority = 110
 outline_render_priority = 109
-position = Vector3(-0.54, -0.36, 0.012)
+position = Vector3(-0.50, -0.425, 0.012)
 pixel_size = 0.00072
 font_size = 30
 horizontal_alignment = 0
 modulate = Color(0.58, 0.8, 0.83, 1)
-text = "LOW LIGHT REQUIRES VISIBLE LIGHT"
+text = "POINT AND PRESS RIGHT TRIGGER  /  B CLOSES"
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin3D" unique_id=1145746189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.460909, 0.388594, -0.241118)
@@ -125,6 +112,7 @@ visible = false
 
 [node name="RightHandPointer" type="XRController3D" parent="XROrigin3D" unique_id=1157989773]
 tracker = &"right_hand"
+pose = &"aim"
 
 [node name="ScenePointerMesh" type="MeshInstance3D" parent="XROrigin3D/RightHandPointer" unique_id=1664739011]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)
@@ -133,21 +121,11 @@ mesh = SubResource("BoxMesh_d27jm")
 [node name="SceneCollidingMesh" type="MeshInstance3D" parent="XROrigin3D/RightHandPointer" unique_id=1462032861]
 mesh = SubResource("SphereMesh_kdpqm")
 
-[node name="RayCast3D" type="RayCast3D" parent="XROrigin3D/RightHandPointer" unique_id=1520920348]
-target_position = Vector3(0, 0, -10)
-collision_mask = 6
-collide_with_areas = true
-
 [node name="OpenXRFbSceneManager" type="OpenXRFbSceneManager" parent="XROrigin3D" unique_id=201852481]
 default_scene = ExtResource("4_3u3ah")
 scenes/global_mesh = ExtResource("5_7ikgf")
-
-[node name="OpenXRFbSpatialAnchorManager" type="OpenXRFbSpatialAnchorManager" parent="XROrigin3D" unique_id=180646852]
-scene = ExtResource("5_g7mio")
 
 [connection signal="button_pressed" from="XROrigin3D/LeftHand" to="." method="_on_left_hand_button_pressed"]
 [connection signal="button_pressed" from="XROrigin3D/RightHand" to="." method="_on_right_hand_button_pressed"]
 [connection signal="openxr_fb_scene_capture_completed" from="XROrigin3D/OpenXRFbSceneManager" to="." method="_on_scene_manager_scene_capture_completed"]
 [connection signal="openxr_fb_scene_data_missing" from="XROrigin3D/OpenXRFbSceneManager" to="." method="_on_scene_manager_scene_data_missing"]
-[connection signal="openxr_fb_spatial_anchor_tracked" from="XROrigin3D/OpenXRFbSpatialAnchorManager" to="." method="_on_spatial_anchor_tracked"]
-[connection signal="openxr_fb_spatial_anchor_untracked" from="XROrigin3D/OpenXRFbSpatialAnchorManager" to="." method="_on_spatial_anchor_untracked"]

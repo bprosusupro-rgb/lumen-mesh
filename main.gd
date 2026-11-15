@@ -2,19 +2,14 @@ extends StartXR
 
 var passthrough_enabled: bool = false
 var scene_and_spatial_anchors_displayed: bool = true
-var selected_spatial_anchor_node: Node3D = null
 
 @onready var left_hand: XRController3D = $XROrigin3D/LeftHand
 @onready var right_hand: XRController3D = $XROrigin3D/RightHand
 @onready var right_hand_pointer: XRController3D = $XROrigin3D/RightHandPointer
-@onready var right_hand_pointer_raycast: RayCast3D = $XROrigin3D/RightHandPointer/RayCast3D
 @onready var scene_pointer_mesh: MeshInstance3D = $XROrigin3D/RightHandPointer/ScenePointerMesh
 @onready var scene_colliding_mesh: MeshInstance3D = $XROrigin3D/RightHandPointer/SceneCollidingMesh
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var scene_manager: OpenXRFbSceneManager = $XROrigin3D/OpenXRFbSceneManager
-@onready var spatial_anchor_manager: OpenXRFbSpatialAnchorManager = $XROrigin3D/OpenXRFbSpatialAnchorManager
-
-const SPATIAL_ANCHORS_FILE = "user://openxr_fb_spatial_anchors.json"
 
 var _setup := false
 var light_mode := 0
@@ -28,23 +23,16 @@ const SETTINGS_FILE = "user://lumen-settings.cfg"
 var mesh_style := 0
 var mesh_color := 0
 
-@onready var status_label: Label3D = $XROrigin3D/XRCamera3D/LumenPanel/Status
 @onready var hint_label: Label3D = $XROrigin3D/XRCamera3D/LumenPanel/Hint
 @onready var panel: Node3D = $XROrigin3D/XRCamera3D/LumenPanel
 
-const COLORS = [
-	"#FF0000",  # Red
-	"#00FF00",  # Green
-	"#0000FF",  # Blue
-	"#FFFF00",  # Yellow
-	"#00FFFF",  # Cyan
-	"#FF00FF",  # Magenta
-	"#FF8000",  # Orange
-	"#800080",  # Purple
-]
+const ROW_Y = [0.225, 0.115, 0.005, -0.105, -0.215, -0.325]
+var menu_rows: Array[Label3D] = []
+var hovered_row := -1
 
 
 func _ready():
+	_build_menu()
 	super._ready()
 
 	for render_model in [%LeftControllerFbRenderModel, %RightControllerFbRenderModel]:
@@ -62,54 +50,10 @@ func _on_openxr_session_begun() -> void:
 	Engine.physics_ticks_per_second = 72
 	_load_preferences()
 	_apply_mesh_style()
-	load_spatial_anchors_from_file()
 	enable_passthrough(true)
 	passthrough_filter = Engine.get_singleton("OpenXRFbPassthroughExtension")
 	_apply_light_mode()
 	_update_panel()
-
-
-func load_spatial_anchors_from_file() -> void:
-	var file := FileAccess.open(SPATIAL_ANCHORS_FILE, FileAccess.READ)
-	if not file:
-		return
-
-	var json := JSON.new()
-	if json.parse(file.get_as_text()) != OK:
-		print("ERROR: Unable to parse ", SPATIAL_ANCHORS_FILE)
-		return
-
-	if not json.data is Dictionary:
-		print("ERROR: ", SPATIAL_ANCHORS_FILE, " contains invalid data")
-		return
-
-	var anchor_data: Dictionary = json.data
-	if anchor_data.size() > 0:
-		spatial_anchor_manager.load_anchors(anchor_data.keys(), anchor_data, OpenXRFbSpatialEntity.STORAGE_LOCAL, true)
-
-
-func save_spatial_anchors_to_file() -> void:
-	var file := FileAccess.open(SPATIAL_ANCHORS_FILE, FileAccess.WRITE)
-	if not file:
-		print("ERROR: Unable to open file for writing: ", SPATIAL_ANCHORS_FILE)
-		return
-
-	var anchor_data := {}
-	for uuid in spatial_anchor_manager.get_anchor_uuids():
-		var entity: OpenXRFbSpatialEntity = spatial_anchor_manager.get_spatial_entity(uuid)
-		anchor_data[uuid] = entity.custom_data
-
-	file.store_string(JSON.stringify(anchor_data))
-	file.close()
-
-
-func _on_spatial_anchor_tracked(_anchor_node: XRAnchor3D, _spatial_entity: OpenXRFbSpatialEntity, is_new: bool) -> void:
-	if is_new:
-		save_spatial_anchors_to_file()
-
-
-func _on_spatial_anchor_untracked(_anchor_node: XRAnchor3D, _spatial_entity: OpenXRFbSpatialEntity) -> void:
-	save_spatial_anchors_to_file()
 
 
 func _on_openxr_fb_render_model_loaded(render_model: OpenXRFbRenderModel) -> void:
@@ -182,58 +126,109 @@ func _save_preferences() -> void:
 		push_warning("Unable to save Lumen Mesh preferences")
 
 
+func _build_menu() -> void:
+	for i in range(ROW_Y.size()):
+		var row := Label3D.new()
+		row.name = "MenuRow%d" % i
+		row.position = Vector3(-0.50, ROW_Y[i], 0.02)
+		row.pixel_size = 0.001
+		row.font_size = 34
+		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		row.no_depth_test = true
+		row.render_priority = 110
+		row.outline_render_priority = 109
+		panel.add_child(row)
+		menu_rows.append(row)
+	_update_panel()
+
+
 func _update_panel() -> void:
-	if not is_instance_valid(status_label):
+	if menu_rows.size() != ROW_Y.size():
 		return
-	var view := "ON" if passthrough_enabled else "OFF"
-	var mesh := "ON" if scene_and_spatial_anchors_displayed else "OFF"
 	var mode: String = LIGHT_MODES[light_mode] if passthrough_filter else "UNAVAILABLE"
-	status_label.text = "VIEW  %s     MESH  %s\nLIGHT  %s\nMESH  %s  /  %s" % [view, mesh, mode, MESH_STYLES[mesh_style], COLOR_NAMES[mesh_color]]
+	var mesh_state := "ON" if scene_and_spatial_anchors_displayed else "OFF"
+	var rows := [
+		"LIGHT MODE           " + mode,
+		"ROOM MESH             " + mesh_state,
+		"MESH STYLE             " + MESH_STYLES[mesh_style],
+		"MESH COLOR            " + COLOR_NAMES[mesh_color],
+		"LOW LIGHT + MESH    ENABLE",
+		"CAPTURE ROOM          START"
+	]
+	for i in range(rows.size()):
+		menu_rows[i].text = (">   " if i == hovered_row else "     ") + rows[i]
+		menu_rows[i].modulate = Color(0.37, 0.95, 1.0) if i == hovered_row else Color(0.90, 0.94, 0.98)
 
 
 func display_scene_and_spatial_anchors(value: bool) -> void:
 	if scene_and_spatial_anchors_displayed == value:
 		return
-
 	scene_manager.visible = value
-	spatial_anchor_manager.visible = value
-	right_hand_pointer.visible = value
-	right_hand_pointer_raycast.enabled = value
-
 	scene_and_spatial_anchors_displayed = value
 	_update_panel()
 
 
+# Coordinates are local to the menu plane. Keep hit targets larger than the text.
+func _menu_row_at(point: Vector2) -> int:
+	if absf(point.x) > 0.55:
+		return -1
+	for i in range(ROW_Y.size()):
+		if absf(point.y - ROW_Y[i]) < 0.05:
+			return i
+	return -1
+
+
 func _physics_process(_delta: float) -> void:
-	if right_hand_pointer.visible:
-		var previous_selected_spatial_anchor_node = selected_spatial_anchor_node
+	var hit := -1
+	var distance := 2.0
+	var show_pointer := panel.visible and right_hand_pointer.get_is_active()
+	if show_pointer:
+		var origin := panel.to_local(right_hand_pointer.global_position)
+		var direction := panel.global_transform.basis.inverse() * -right_hand_pointer.global_transform.basis.z
+		if direction.z < -0.001:
+			var t := -origin.z / direction.z
+			if t > 0.0 and t < 5.0:
+				var point := origin + direction * t
+				hit = _menu_row_at(Vector2(point.x, point.y))
+				if hit >= 0:
+					distance = t
+					scene_colliding_mesh.position = Vector3(0, 0, -t)
+	scene_pointer_mesh.visible = show_pointer
+	scene_colliding_mesh.visible = show_pointer and hit >= 0
+	if show_pointer:
+		scene_pointer_mesh.mesh.size.z = distance
+		scene_pointer_mesh.position.z = -distance / 2.0
+	if hit != hovered_row:
+		hovered_row = hit
+		_update_panel()
 
-		if right_hand_pointer_raycast.is_colliding():
-			var collision_point: Vector3 = right_hand_pointer_raycast.get_collision_point()
-			scene_colliding_mesh.global_position = collision_point
 
-			var pointer_length: float = (collision_point - right_hand_pointer.global_position).length()
-			scene_pointer_mesh.mesh.size.z = pointer_length
-			scene_pointer_mesh.position.z = -pointer_length / 2.0
-
-			var collider: CollisionObject3D = right_hand_pointer_raycast.get_collider()
-			if collider and collider.get_collision_layer_value(3):
-				selected_spatial_anchor_node = collider
-			else:
-				selected_spatial_anchor_node = null
-		else:
-			scene_pointer_mesh.mesh.size.z = 5
-			scene_pointer_mesh.position.z = -2.5
-			selected_spatial_anchor_node = null
-
-		if previous_selected_spatial_anchor_node != selected_spatial_anchor_node:
-			if previous_selected_spatial_anchor_node:
-				previous_selected_spatial_anchor_node.set_selected(false)
-			if selected_spatial_anchor_node:
-				selected_spatial_anchor_node.set_selected(true)
-				scene_colliding_mesh.visible = false
-			else:
-				scene_colliding_mesh.visible = true
+func _activate_menu_row(index: int) -> void:
+	match index:
+		0:
+			light_mode = (light_mode + 1) % LIGHT_MODES.size()
+			_apply_light_mode()
+			_save_preferences()
+		1:
+			display_scene_and_spatial_anchors(not scene_and_spatial_anchors_displayed)
+		2:
+			mesh_style = (mesh_style + 1) % MESH_STYLES.size()
+			_apply_mesh_style()
+			_save_preferences()
+		3:
+			mesh_color = (mesh_color + 1) % COLOR_NAMES.size()
+			_apply_mesh_style()
+			_save_preferences()
+		4:
+			light_mode = 1
+			enable_passthrough(true)
+			display_scene_and_spatial_anchors(true)
+			_apply_light_mode()
+			_save_preferences()
+			hint_label.text = "MESH USES YOUR SAVED ROOM SCAN"
+		5:
+			hint_label.text = "FOLLOW THE HEADSET ROOM SETUP"
+			scene_manager.request_scene_capture()
 
 
 func _on_left_hand_button_pressed(name):
@@ -255,31 +250,16 @@ func _on_left_hand_button_pressed(name):
 
 
 func _on_right_hand_button_pressed(name: String) -> void:
-	if name == "trigger_click" and right_hand_pointer.visible:
-		if right_hand_pointer_raycast.is_colliding():
-			if selected_spatial_anchor_node:
-				var anchor_parent = selected_spatial_anchor_node.get_parent()
-				if anchor_parent is XRAnchor3D:
-					spatial_anchor_manager.untrack_anchor(anchor_parent.tracker)
-			else:
-				var anchor_transform := Transform3D()
-				anchor_transform.origin = right_hand_pointer_raycast.get_collision_point()
-
-				var collision_normal: Vector3 = right_hand_pointer_raycast.get_collision_normal()
-				if collision_normal.is_equal_approx(Vector3.UP):
-					anchor_transform.basis = anchor_transform.basis.rotated(Vector3(1.0, 0.0, 0.0), PI / 2.0)
-				elif collision_normal.is_equal_approx(Vector3.DOWN):
-					anchor_transform.basis = anchor_transform.basis.rotated(Vector3(1.0, 0.0, 0.0), -PI / 2.0)
-				else:
-					anchor_transform.basis = Basis.looking_at(right_hand_pointer_raycast.get_collision_normal())
-
-				spatial_anchor_manager.create_anchor(anchor_transform, {color = COLORS[randi() % COLORS.size()]})
+	if name == "trigger_click" and panel.visible and hovered_row >= 0:
+		_activate_menu_row(hovered_row)
 	elif name == "ax_button":
 		light_mode = (light_mode + 1) % LIGHT_MODES.size()
 		_apply_light_mode()
 		_save_preferences()
 	elif name == "by_button":
 		panel.visible = not panel.visible
+		if not panel.visible:
+			hovered_row = -1
 
 
 func _on_scene_manager_scene_capture_completed(success: bool) -> void:
